@@ -1,18 +1,41 @@
+---
+title: "Education Deserts"
+author: "Victor Feagins"
+date: "4/28/2021"
+output: html_document
+---
+
+
+
+### Packages
+```{r}
 library(tidyverse)
 library(tidycensus)
+library(tmap)
+library(sf)
+```
+
+
+### School Data
+Gathered from the IPEDS compare institutions service
+```{r}
 srd <- read_csv("Data/School Data/Data_4-13-2021---1003.csv")
+```
 
-
+```{r}
 # Filtering for Schools of interest
 
 Academicsrd <- srd %>% 
-  filter(`Sector of institution (HD2019)` != 0, # The school is not administrative
+  filter(`State abbreviation (HD2019)` == "TX",
+         `Sector of institution (HD2019)` != 0, # The school is not administrative
          `Institution is active in current year (HD2019)` == 1, #The School is active
          `Academic (IC2019)` == 1,#The School is Academic School
          `Degree-granting status (HD2019)` == 1, #Gives Degrees
          `Percent admitted - total (DRVADM2019)`> 75) # Broad Band access based on papers
+```
 
-
+There seems to be colleges that are missing data for cost
+```{r}
 #Renaming Variables of interest for coding convince
 schooldf <- Academicsrd %>%
   rename(SchoolName = `Institution Name`,
@@ -33,10 +56,50 @@ schooldf <- Academicsrd %>%
          TotalPriceLivingOnCampusInState = `Total price for in-state students living on campus 2019-20 (DRVIC2019)`,
          TotalPriceLivingOnCampusOutState = `Total price for out-of-state students living on campus 2019-20 (DRVIC2019)`)
 
-#Census Data
+```
 
-sa_acs<-get_acs(geography = "tract",
+
+```{r}
+#Creating Geometry with SchoolDf
+schoolsf<- st_as_sf(schooldf, coords = c("Longitude","Latitude"), crs = 4269) #Geographic census NAD83
+plot(st_geometry(schoolsf))
+```
+
+
+#Census Data
+```{r}
+TX_acs<-get_acs(geography = "tract",
                 state="TX",
                 year = 2019,
                 variables=c("DP03_0062", "DP03_0063") ,#Median62 and Mean63 House Income
                 geometry = T, output = "wide")
+```
+
+
+```{r}
+plot(st_geometry(TX_acs))
+```
+
+```{r}
+tm_shape(TX_acs)+
+  tm_polygons()+
+tm_shape(schoolsf)+
+  tm_dots(col = "red", size = .5)
+```
+
+#### Projecting Data
+```{r}
+schoolsf.proj <- st_transform(schoolsf, crs = 3081) #Using the Texas State Mapping System in Meters
+st_geometry(schoolsf.proj)
+```
+```{r}
+TX_acs.proj <- st_transform(TX_acs, crs = 3081)
+st_geometry(TX_acs.proj)
+```
+
+#### Creating Buffers
+```{r}
+
+
+```
+
