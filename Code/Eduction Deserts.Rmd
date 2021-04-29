@@ -54,7 +54,8 @@ schooldf <- Academicsrd %>%
          AverageNetPrice75_110 = `Average net price (income 75 001-110 000)-students awarded Title IV federal financial aid  2018-19 (SFA1819)`,
          AverageNetPrice110_inf = `Average net price (income over 110 000)-students awarded Title IV federal financial aid  2018-19 (SFA1819)`,
          TotalPriceLivingOnCampusInState = `Total price for in-state students living on campus 2019-20 (DRVIC2019)`,
-         TotalPriceLivingOnCampusOutState = `Total price for out-of-state students living on campus 2019-20 (DRVIC2019)`)
+         TotalPriceLivingOnCampusOutState = `Total price for out-of-state students living on campus 2019-20 (DRVIC2019)`) %>% 
+  select(SchoolName, State, Longitude, Latitude, Address, ZIPcode, PercentAdmittedTotal, PercentAdmittedMale, PercentAdmittedFemale,grep("^AverageNetPrice", names(.)))
 
 ```
 
@@ -73,6 +74,7 @@ TX_acs<-get_acs(geography = "tract",
                 year = 2019,
                 variables=c("DP03_0062", "DP03_0063") ,#Median62 and Mean63 House Income
                 geometry = T, output = "wide")
+  
 ```
 
 
@@ -100,6 +102,28 @@ st_geometry(TX_acs.proj)
 #### Creating Buffers
 ```{r}
 
+distance_travel <-  60 * 1609 #60 Miles times 1609 to convert to meters this is one hour drive
+#Meters since projections are in meters
+school_buffer<- st_buffer(schoolsf.proj, distance_travel)
+tm_shape(TX_acs.proj)+
+  tm_polygons()+
+tm_shape(school_buffer)+
+  tm_polygons(col = "red")
+```
 
+#### Joining Income Levels with School Data
+```{r}
+Tract_Schools <- st_join(school_buffer,TX_acs.proj, join = st_intersects)
+
+```
+```{r}
+test <- st_intersects(school_buffer[1,],TX_acs.proj)
+```
+
+```{r}
+EachSchool<- vector(mode = "list", nrow(school_buffer))
+for (i in 1:nrow(school_buffer)){
+  school_buffer[i,]
+}
 ```
 
